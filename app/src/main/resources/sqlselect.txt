@@ -1,0 +1,5 @@
+select *
+from input;
+
+select a, b,   asd
+from input;
