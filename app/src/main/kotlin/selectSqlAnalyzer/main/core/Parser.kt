@@ -1,153 +1,170 @@
 package selectSqlAnalyzer.main.core
 
-import selectSqlAnalyzer.main.Context
-import selectSqlAnalyzer.main.Field
-import selectSqlAnalyzer.main.Table
-import java.lang.Exception
-import java.lang.StringBuilder
-import java.text.ParseException
-
 class Parser(
         query: String,
-        val parentContext: Context = Context.Global(),
+        parentContext: Context?,
         startPos: Int = 0
 ) {
-    private val context = Context("")
-    private lateinit var helper: Helper
-    private var resultTable: Table? = null
-
-    init {
-        this.helper = Helper(query, startPos)
+    val queryPartsHelper = QueryPartsHelper(query).also { it.parseParts() }
+    val context = Context(parentContext)
+    fun parse(): ParseResult {
+        val table = parseFrom()
+        val fields = parseSelect()
+        return ParseResult(
+                fields,
+                table
+        )
     }
 
-    fun getTable(): Table {
-        return this.resultTable ?: throw ParsingException("Cant give table, its null", helper.pos)
-    }
+    private fun parseFrom(): ITable? {
+        if (queryPartsHelper.fromString.isEmpty())
+            return null
 
-    private fun parseInnerQuery(): Table {
-        val p = Parser(helper.query, context, helper.pos)
-        p.start()
-        helper.pos = p.helper.pos
-        return p.getTable()
-    }
+        val ph = ParseHelper(queryPartsHelper.fromString)
+        ph.clearSpaces()
+        ph.parse("from")
+        ph.clearSpaces()
 
-    fun start() {
-        resultTable = Table("", mutableListOf())
-        helper.apply {
-            clearSpaces()
-            parse("select")
-
-            val sp = selectParams()
-            sp.joinToString(separator = ",") { it.toPrettyString() }
-        }
-
-    }
-
-    fun selectParams(): MutableList<SelectParam> {
-        val selectParams = mutableListOf<SelectParam>()
-        helper.apply {
-            var selectParam: SelectParam
-            do {
-                clearSpaces()
-                if (isParse('(')) {
-                    move(1)
-                    selectParam = SelectParam(parseInnerQuery().asValue().toString(), false)
-                    clearSpaces()
-                    if (isParse(')'))
-                        move(1)
-                    else
-                        throw ParsingException("Expected ')'", pos)
-                } else {
-                    selectParam = SelectParam(parseUntil(' ', ',', '\n', ';'))
-                    if (cur == ';')
-                        break
-                    move(1)
-                    clearSpaces()
-                }
-                selectParams.add(selectParam)
-                val f = Field(selectParam.data)
-                resultTable?.fields?.add(f)
-                
-                 mutableListOf(context.tables.find { it.name=="input" }?.fields)
-
-            } while (!isParse("from", ";"))
-        }
-        return selectParams
-    }
-
-    class Helper(
-            val query: String,
-            val startPos: Int = 0
-    ) {
-        var pos: Int = startPos
-        var cur: Char = query[startPos]
-
-        fun move(n: Int = 1) {
-            pos += n
-            cur = query[pos]
-        }
-
-        fun canMove(n: Int = 1) = pos + n < query.length
-
-        fun parseUntil(vararg endSymbols: Char): String {
-            return with(StringBuilder()) {
-                while (!endSymbols.contains(cur)) {
-                    append(cur)
-                    if (canMove())
-                        move()
-                    else
-                        break
-                }
-
-                val result = toString().also {
-                    if (it.isEmpty())
-                        throw Exception("empty parse result")
-                }
-                return@with result
+        if (ph.isParse('(')) {
+            ph.move()
+            val closeBracketPos =
+                    ParseHelperFunctions.wordPositionFindBracketSkip(
+                            queryPartsHelper.fromString, ")", ph.pos
+                    )
+            val innerQueryParser = Parser(ph.text.substring(ph.pos, closeBracketPos), context)
+            val parsedTable = innerQueryParser.parse()
+            ph.pos = closeBracketPos
+            ph.move()
+            ph.clearSpaces()
+            ph.parse("as")
+            ph.clearSpaces()
+            val asTableName = ph.parseTableName()
+            context.tables[asTableName] = parsedTable
+            return parsedTable
+        } else {
+            val tableName = ph.parseTableName()
+            val table = context.find(tableName)
+            if (table != null) {
+                context.tables[tableName] = table
+                return table
             }
-        }
-
-        fun clearSpaces() {
-            while (cur == ' ' || cur == '\n')
-                move()
-        }
-
-        fun nextNSymbols(cnt: Int): String {
-            val left = query.length - pos
-            val count = if (left > cnt) cnt else left
-            val substring = query.substring(pos, pos + count)
-            return substring
-        }
-
-        fun nextSymbol(): Char {
-            if (canMove())
-                return query[pos + 1]
-            throw ParsingException("Cant move", pos)
-        }
-
-        fun parse(vararg texts: String): String {
-            for (t in texts)
-                if (canMove(t.length) && nextNSymbols(t.length) == t) {
-                    move(t.length)
-                    return t
-                }
-            throw ParsingException("Cant find ${if (texts.size != 1) "any of " else ""}[${texts.joinToString(",")}]", pos)
-        }
-
-        fun isParse(vararg texts: String): Boolean {
-            for (t in texts)
-                if (canMove(t.length) && nextNSymbols(t.length) == t) {
-                    return true
-                }
-            return false
-        }
-
-        fun isParse(vararg texts: Char): Boolean {
-            for (t in texts)
-                if (cur == t) {
-                    return true
-                }
-            return false
+            throw ParsingException("Cant find table with name $tableName")
         }
     }
+
+    private fun parseSelect(): List<IField> {
+        val res = mutableListOf<IField>()
+        val ph = ParseHelper(queryPartsHelper.selectString)
+        ph.parse("select")
+        while (ph.pos < queryPartsHelper.selectString.length - 1) {
+            ph.clearSpaces()
+            if (ph.isParse("(")) {
+                ph.move()
+                ph.clearSpaces()
+                val closeBracketPos =
+                        ParseHelperFunctions.wordPositionFindBracketSkip(
+                                queryPartsHelper.selectString, ")", ph.pos
+                        )
+                val innerQueryParser = Parser(ph.text.substring(ph.pos, closeBracketPos), context)
+                val parsedTable = innerQueryParser.parse()
+                ph.pos = closeBracketPos
+                res.add(parsedTable)
+//                if (parsedTable.fields.size > 1)
+//                    throw ParsingException("Expected one field", ph.pos)
+//                val parsedTableField = parsedTable.fields[0]
+//                if (!parsedTableField.isStatic)
+//                    throw ParsingException("Expected static value, not field name", ph.pos)
+
+//                res.add(Field(parsedTableField.str, true))
+
+                ph.pos = closeBracketPos
+                if (ph.isParse(")"))
+                    ph.move()
+            } else if (ph.isParse('\"')) {
+                ph.move()
+                val fieldName = ph.parseFieldName()
+                ph.parse('\"')
+                res.add(Field(fieldName, true))
+            } else if (ph.isParse('*')) {
+                res.add(Field.ALL)
+                ph.move()
+            } else {
+                val fieldValue = ph.parseFieldValue()
+                res.add(Field(fieldValue, false))
+            }
+            ph.clearSpaces()
+            if (ph.isParse(','))
+                ph.move()
+        }
+        return res
+    }
+
+
+    class Context(
+            val parentContext: Context? = null
+    ) {
+        val tables = mutableMapOf<String, ITable>()
+
+        fun find(tableName: String): ITable? {
+            return tables[tableName]
+                    ?: if (parentContext == null)
+                        return null
+                    else
+                        return parentContext.find(tableName)
+        }
+    }
+
+    class ParseResult(
+            val IFields: List<IField>,
+            val from: ITable?,
+            val where: Any? = null,
+            val groupBy: Any? = null,
+            val having: Any? = null,
+            val orderBy: Any? = null,
+    ) : IField, ITable {
+        var tableName: String? = null
+
+        override fun value(): String {
+            if (IFields.size > 1)
+                throw ParsingException("Expected one field")
+            if (!IFields[0].isStatic())
+                throw ParsingException("Expected static value, not field name")
+            return IFields[0].value()
+        }
+
+        override fun isStatic(): Boolean {
+            if (IFields.size > 1)
+                throw ParsingException("Expected one field")
+            if (!IFields[0].isStatic())
+                throw ParsingException("Expected static value, not field name")
+            return IFields[0].isStatic()
+        }
+
+    }
+
+    interface IField {
+        fun value(): String
+        fun isStatic(): Boolean
+    }
+
+    class Field(
+            private val value: String,
+            private val isStatic: Boolean,
+    ) : IField {
+        override fun value(): String = value
+
+        override fun isStatic(): Boolean = isStatic
+
+        companion object {
+            val ALL = Field("*", false)
+        }
+    }
+
+    interface ITable {
+    }
+
+    class Table() : ITable {
+
+    }
+
 }

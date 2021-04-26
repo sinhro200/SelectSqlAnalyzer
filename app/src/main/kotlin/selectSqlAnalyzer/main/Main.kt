@@ -15,9 +15,19 @@ class Main {
                 return@with this.queries
             }
 
+            val context = Parser.Context().also {
+                it.tables.putAll(mapOf(
+                        "input" to Parser.Table(),
+                        "t" to Parser.Table(),
+                ))
+            }
+
             for (q in queries) {
                 CustomLogger.logQuery(q)
-                Parser(q).start()
+                val parseResult = Parser(q, context).parse()
+
+                CustomLogger.logParseResult(parseResult)
+                CustomLogger.bigDivider()
             }
         }
 
