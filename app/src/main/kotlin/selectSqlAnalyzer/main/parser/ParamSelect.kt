@@ -1,6 +1,6 @@
 package selectSqlAnalyzer.main.parser
 
-class SelectParam(
+class ParamSelect(
         val data: String,
         val asValue: Boolean = false,
 ){
@@ -8,7 +8,3 @@ class SelectParam(
         return "SelectParam(data='$data', asValue=$asValue)"
     }
 }
-
-class SelectOperator(
-        val params: List<SelectParam>
-)
