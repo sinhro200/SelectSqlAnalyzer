@@ -1,11 +1,8 @@
 package selectSqlAnalyzer.main
 
-import com.google.common.io.Resources
-import selectSqlAnalyzer.main.parser.Parser
-import java.io.FileNotFoundException
-import java.io.FileReader
-import java.lang.StringBuilder
-import java.nio.charset.Charset
+import selectSqlAnalyzer.main.core.Parser
+import selectSqlAnalyzer.main.tools.CustomLogger
+import selectSqlAnalyzer.main.tools.FileParser
 
 class Main {
     companion object {
@@ -13,26 +10,26 @@ class Main {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            javaClass.classLoader.getResource(selectFile)?.file?.let {
-                with(FileReader(it)) {
-                    beginWith(readText())
-                    close()
-                }
-            } ?: throw FileNotFoundException(selectFile)
-        }
-
-        fun beginWith(selectText: String) {
-            var remainString = selectText
-            var curQuery = remainString.substringBefore(';', "")
-            while (curQuery.isNotEmpty()) {
-                val p = Parser(curQuery)
-                val sop = p.selectOperator()
-                println(sop.params.joinToString(separator = ", "))
-
-                remainString = remainString.substringAfter(';', "")
-                curQuery = remainString.substringBefore(';', "")
+            val queries = with(FileParser(selectFile)) {
+                parse()
+                return@with this.queries
             }
 
+            val context = Parser.Context().also {
+                it.tables.putAll(mapOf(
+                        "input" to Parser.Table(),
+                        "t" to Parser.Table(),
+                ))
+            }
+
+            for (q in queries) {
+                CustomLogger.logQuery(q)
+                val parseResult = Parser(q, context).parse()
+
+                CustomLogger.logParseResult(parseResult)
+                CustomLogger.bigDivider()
+            }
         }
+
     }
 }
