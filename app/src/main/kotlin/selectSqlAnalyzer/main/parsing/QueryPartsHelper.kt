@@ -1,4 +1,4 @@
-package selectSqlAnalyzer.main.core
+package selectSqlAnalyzer.main.parsing
 
 class QueryPartsHelper(
         val query: String
@@ -43,7 +43,7 @@ class QueryPartsHelper(
     }
 
     private fun selectString(): String {
-        fromPosition = ParseHelperFunctions.wordPositionFindBracketSkip(query, "from", selectPosition)
+        fromPosition = wordPositionFindBracketSkip(query, "from", selectPosition)
         return if (fromPosition == -1)
             query
         else
@@ -51,7 +51,7 @@ class QueryPartsHelper(
     }
 
     private fun fromString(): String {
-        wherePosition = ParseHelperFunctions.wordPositionFindBracketSkip(query, "where", fromPosition)
+        wherePosition = wordPositionFindBracketSkip(query, "where", fromPosition)
         return if (wherePosition == -1)
             query.substring(fromPosition)
         else
@@ -59,7 +59,7 @@ class QueryPartsHelper(
     }
 
     private fun whereString(): String {
-        groupByPosition = ParseHelperFunctions.wordPositionFindBracketSkip(query, "group by", wherePosition)
+        groupByPosition = wordPositionFindBracketSkip(query, "group by", wherePosition)
         return if (groupByPosition == -1)
             query.substring(wherePosition)
         else
@@ -67,7 +67,7 @@ class QueryPartsHelper(
     }
 
     private fun groupByString(): String {
-        havingPosition = ParseHelperFunctions.wordPositionFindBracketSkip(query, "having", groupByPosition)
+        havingPosition = wordPositionFindBracketSkip(query, "having", groupByPosition)
         return if (havingPosition == -1)
             query.substring(groupByPosition)
         else
@@ -75,7 +75,7 @@ class QueryPartsHelper(
     }
 
     private fun havingString(): String {
-        orderByPosition = ParseHelperFunctions.wordPositionFindBracketSkip(query, "order by", havingPosition)
+        orderByPosition = wordPositionFindBracketSkip(query, "order by", havingPosition)
         return if (orderByPosition == -1)
             query.substring(havingPosition)
         else

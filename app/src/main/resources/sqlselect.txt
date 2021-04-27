@@ -17,3 +17,9 @@ select a, (
 )
 from input;
 
+select a, (
+    select f
+    from input
+) as innT
+from input;
+

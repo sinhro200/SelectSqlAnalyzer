@@ -1,4 +1,4 @@
-package selectSqlAnalyzer.main.core
+package selectSqlAnalyzer.main.parsing
 
 import java.lang.Exception
 

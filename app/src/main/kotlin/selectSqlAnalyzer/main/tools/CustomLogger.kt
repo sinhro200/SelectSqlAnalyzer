@@ -1,6 +1,6 @@
 package selectSqlAnalyzer.main.tools
 
-import selectSqlAnalyzer.main.core.Parser
+import selectSqlAnalyzer.main.ParseResult
 
 object CustomLogger {
     const val ZoneDivider = "-- -- -- -- --"
@@ -19,17 +19,17 @@ object CustomLogger {
         log("")
     }
 
-    fun logParseResult(pr: Parser.ParseResult) {
+    fun logParseResult(pr: ParseResult) {
         log(ZoneDivider)
         logParseResultInner(pr)
         log(ZoneDivider)
     }
 
-    private fun logParseResultInner(pr: Parser.ParseResult, level: Int = 0) {
+    private fun logParseResultInner(pr: ParseResult, level: Int = 0) {
         LevelLogger(level).apply {
             log("select")
             pr.IFields.forEach {
-                if (it is Parser.ParseResult)
+                if (it is ParseResult)
                     logParseResultInner(it, level + 1)
                 else {
                     log(" - ${it.value()}" + if (!it.isStatic()) " as field" else " as static value")
@@ -37,7 +37,7 @@ object CustomLogger {
             }
 
             log("from")
-            if (pr.from is Parser.ParseResult)
+            if (pr.from is ParseResult)
                 logParseResultInner(pr.from, level + 1)
             else
                 log(" - ${pr.from}")
@@ -53,4 +53,6 @@ object CustomLogger {
             println(text)
         }
     }
+
+
 }

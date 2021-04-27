@@ -1,4 +1,10 @@
-package selectSqlAnalyzer.main.core
+package selectSqlAnalyzer.main.parsing
+
+import selectSqlAnalyzer.main.ParseResult
+import selectSqlAnalyzer.main.core.Context
+import selectSqlAnalyzer.main.core.Field
+import selectSqlAnalyzer.main.core.IField
+import selectSqlAnalyzer.main.core.ITable
 
 class Parser(
         query: String,
@@ -28,7 +34,7 @@ class Parser(
         if (ph.isParse('(')) {
             ph.move()
             val closeBracketPos =
-                    ParseHelperFunctions.wordPositionFindBracketSkip(
+                    wordPositionFindBracketSkip(
                             queryPartsHelper.fromString, ")", ph.pos
                     )
             val innerQueryParser = Parser(ph.text.substring(ph.pos, closeBracketPos), context)
@@ -62,7 +68,7 @@ class Parser(
                 ph.move()
                 ph.clearSpaces()
                 val closeBracketPos =
-                        ParseHelperFunctions.wordPositionFindBracketSkip(
+                        wordPositionFindBracketSkip(
                                 queryPartsHelper.selectString, ")", ph.pos
                         )
                 val innerQueryParser = Parser(ph.text.substring(ph.pos, closeBracketPos), context)
@@ -100,71 +106,16 @@ class Parser(
     }
 
 
-    class Context(
-            val parentContext: Context? = null
-    ) {
-        val tables = mutableMapOf<String, ITable>()
 
-        fun find(tableName: String): ITable? {
-            return tables[tableName]
-                    ?: if (parentContext == null)
-                        return null
-                    else
-                        return parentContext.find(tableName)
-        }
-    }
 
-    class ParseResult(
-            val IFields: List<IField>,
-            val from: ITable?,
-            val where: Any? = null,
-            val groupBy: Any? = null,
-            val having: Any? = null,
-            val orderBy: Any? = null,
-    ) : IField, ITable {
-        var tableName: String? = null
 
-        override fun value(): String {
-            if (IFields.size > 1)
-                throw ParsingException("Expected one field")
-            if (!IFields[0].isStatic())
-                throw ParsingException("Expected static value, not field name")
-            return IFields[0].value()
-        }
 
-        override fun isStatic(): Boolean {
-            if (IFields.size > 1)
-                throw ParsingException("Expected one field")
-            if (!IFields[0].isStatic())
-                throw ParsingException("Expected static value, not field name")
-            return IFields[0].isStatic()
-        }
 
-    }
 
-    interface IField {
-        fun value(): String
-        fun isStatic(): Boolean
-    }
 
-    class Field(
-            private val value: String,
-            private val isStatic: Boolean,
-    ) : IField {
-        override fun value(): String = value
 
-        override fun isStatic(): Boolean = isStatic
 
-        companion object {
-            val ALL = Field("*", false)
-        }
-    }
 
-    interface ITable {
-    }
 
-    class Table() : ITable {
-
-    }
 
 }

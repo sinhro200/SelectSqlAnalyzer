@@ -1,6 +1,8 @@
 package selectSqlAnalyzer.main
 
-import selectSqlAnalyzer.main.core.Parser
+import selectSqlAnalyzer.main.core.Context
+import selectSqlAnalyzer.main.core.Table
+import selectSqlAnalyzer.main.parsing.Parser
 import selectSqlAnalyzer.main.tools.CustomLogger
 import selectSqlAnalyzer.main.tools.FileParser
 
@@ -15,10 +17,10 @@ class Main {
                 return@with this.queries
             }
 
-            val context = Parser.Context().also {
+            val context = Context().also {
                 it.tables.putAll(mapOf(
-                        "input" to Parser.Table(),
-                        "t" to Parser.Table(),
+                        "input" to Table(),
+                        "t" to Table(),
                 ))
             }
 
