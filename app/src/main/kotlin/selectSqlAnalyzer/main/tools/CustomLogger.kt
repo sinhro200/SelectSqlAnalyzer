@@ -1,6 +1,8 @@
 package selectSqlAnalyzer.main.tools
 
 import selectSqlAnalyzer.main.ParseResult
+import selectSqlAnalyzer.main.core.IField
+import selectSqlAnalyzer.main.core.ITable
 
 object CustomLogger {
     const val ZoneDivider = "-- -- -- -- --"
@@ -14,45 +16,60 @@ object CustomLogger {
         println(text)
     }
 
-    fun bigDivider(){
+    fun bigDivider() {
         log("")
         log("")
     }
 
     fun logParseResult(pr: ParseResult) {
-        log(ZoneDivider)
         logParseResultInner(pr)
-        log(ZoneDivider)
     }
 
     private fun logParseResultInner(pr: ParseResult, level: Int = 0) {
         LevelLogger(level).apply {
-            log("select")
-            pr.IFields.forEach {
+            if (level != 0)
+                log(" -(select", level - 1)
+            else
+                log("select")
+            pr.fields.forEach {
                 if (it is ParseResult)
                     logParseResultInner(it, level + 1)
                 else {
-                    log(" - ${it.value()}" + if (!it.isStatic()) " as field" else " as static value")
+                    log(" - ${it.prettyString()}");
                 }
             }
 
             log("from")
-            if (pr.from is ParseResult)
+            if (pr.from is ParseResult) {
                 logParseResultInner(pr.from, level + 1)
-            else
-                log(" - ${pr.from}")
+            } else
+                log(" - ${pr.from?.prettyString() ?: "none"}")
+
+            if (level != 0 && pr.tableName() != null)
+                log("  ) as ${pr.tableName()}", level - 1)
+
         }
     }
 
     private class LevelLogger(
             protected val level: Int
     ) {
-        fun log(text: String) {
-            for (i in 0..level)
+        fun log(text: String, forceLevel: Int = level) {
+            for (i in 0..forceLevel)
                 print("   ")
             println(text)
         }
     }
 
+    fun IField.prettyString(): String {
+        //return "${this.value()} " + if (!this.isStatic()) " as field" else " as static value"
+        val value = this.value()
+        return if (this.isStatic()) "\'$value\'"
+        else value
+    }
+
+    fun ITable.prettyString(): String {
+        return "${this.tableName()} [${this.fields().joinToString(",")}]"
+    }
 
 }

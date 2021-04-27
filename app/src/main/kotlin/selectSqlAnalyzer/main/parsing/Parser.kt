@@ -42,25 +42,31 @@ class Parser(
             ph.pos = closeBracketPos
             ph.move()
             ph.clearSpaces()
-            ph.parse("as")
+            try {
+                ph.parse("as")
+            }catch (e : Exception){
+                throw ParsingException("подзапрос во FROM должен иметь псевдоним")
+            }
+
             ph.clearSpaces()
             val asTableName = ph.parseTableName()
-            context.tables[asTableName] = parsedTable
+            parsedTable.tableName = asTableName
+            if (asTableName.isEmpty())
+                throw ParsingException("подзапрос во FROM должен иметь псевдоним")
+
+            context.addTable(parsedTable)
             return parsedTable
         } else {
             val tableName = ph.parseTableName()
-            val table = context.find(tableName)
-            if (table != null) {
-                context.tables[tableName] = table
-                return table
-            }
-            throw ParsingException("Cant find table with name $tableName")
+            return context.findTable(tableName)
+                    ?: throw ParsingException("Cant find table with name $tableName")
         }
     }
 
     private fun parseSelect(): List<IField> {
         val res = mutableListOf<IField>()
         val ph = ParseHelper(queryPartsHelper.selectString)
+        ph.clearSpaces()
         ph.parse("select")
         while (ph.pos < queryPartsHelper.selectString.length - 1) {
             ph.clearSpaces()
@@ -96,7 +102,10 @@ class Parser(
                 ph.move()
             } else {
                 val fieldValue = ph.parseFieldValue()
-                res.add(Field(fieldValue, false))
+                if (fieldValue.toIntOrNull() != null )
+                    res.add(Field(fieldValue, true))
+                else
+                    res.add(Field(fieldValue, false))
             }
             ph.clearSpaces()
             if (ph.isParse(','))
@@ -104,18 +113,6 @@ class Parser(
         }
         return res
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

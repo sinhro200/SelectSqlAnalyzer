@@ -18,10 +18,8 @@ class Main {
             }
 
             val context = Context().also {
-                it.tables.putAll(mapOf(
-                        "input" to Table(),
-                        "t" to Table(),
-                ))
+                it.addTable(Table("input", emptyList()))
+                it.addTable(Table("t", emptyList()))
             }
 
             for (q in queries) {

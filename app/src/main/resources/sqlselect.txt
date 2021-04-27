@@ -20,6 +20,8 @@ from input;
 select a, (
     select f
     from input
-) as innT
-from input;
-
+)
+from (
+         select a,d
+         from input
+     ) as innT;

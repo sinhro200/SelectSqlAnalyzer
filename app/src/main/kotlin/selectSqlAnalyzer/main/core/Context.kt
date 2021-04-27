@@ -3,13 +3,19 @@ package selectSqlAnalyzer.main.core
 class Context(
         val parentContext: Context? = null
 ) {
-    val tables = mutableMapOf<String, ITable>()
+    private val tables = mutableMapOf<String?, ITable>()
 
-    fun find(tableName: String): ITable? {
+    fun findTable(tableName: String): ITable? {
         return tables[tableName]
                 ?: if (parentContext == null)
                     return null
                 else
-                    return parentContext.find(tableName)
+                    return parentContext.findTable(tableName)
     }
+
+    fun addTable(table: ITable) {
+        tables[table.tableName()] = table
+    }
+
+
 }
