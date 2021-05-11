@@ -1,7 +1,7 @@
 package selectSqlAnalyzer.main.parsing
 
 
-public fun wordPositionFindBracketSkip(
+public fun findWordPositionSkippingBrackets(
         input: String,
         wordToFind: String,
         startPos: Int = 0,

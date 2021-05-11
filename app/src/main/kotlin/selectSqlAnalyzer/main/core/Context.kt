@@ -1,21 +1,18 @@
 package selectSqlAnalyzer.main.core
 
+import selectSqlAnalyzer.main.ast.nodes.SelectAstNode
+
 class Context(
         val parentContext: Context? = null
 ) {
-    private val tables = mutableMapOf<String?, ITable>()
+    private val tables = mutableMapOf<String, Pair<ITable, Int>>()
 
-    fun findTable(tableName: String): ITable? {
-        return tables[tableName]
-                ?: if (parentContext == null)
-                    return null
-                else
-                    return parentContext.findTable(tableName)
+    fun addTable(table: ITable, tableName: String) {
+        tables[tableName] = Pair(table, 0)
     }
 
-    fun addTable(table: ITable) {
-        tables[table.tableName()] = table
+    fun execute(parseResult: SelectAstNode){
+        //todo
     }
-
 
 }

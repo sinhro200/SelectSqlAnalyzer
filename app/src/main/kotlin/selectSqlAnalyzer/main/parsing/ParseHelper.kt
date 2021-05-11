@@ -35,24 +35,9 @@ class ParseHelper(
         }
     }
 
-    fun parseFieldName(): String {
-        if (cur.isDigit())
-            throw ParsingException("Field name should not start with a digit")
+    fun parseFieldString(): String {
         fun isCorrect(c: Char): Boolean {
-            return c.isDigit() || c.isLetter()
-        }
-        return with(StringBuilder()) {
-            while (isCorrect(cur)) {
-                append(cur)
-                move()
-            }
-            return toString()
-        }
-    }
-
-    fun parseFieldValue(): String {
-        fun isCorrect(c: Char): Boolean {
-            return c.isDigit() || c.isLetter() || listOf('.',':').contains(c)
+            return c.isDigit() || c.isLetter() || listOf('.').contains(c)
         }
         return with(StringBuilder()) {
             while (isCorrect(cur)) {
@@ -79,7 +64,7 @@ class ParseHelper(
     }
 
     fun clearSpaces() {
-        while (pos < text.length-1 && (cur == ' ' || cur == '\n'))
+        while (pos < text.length - 1 && (cur == ' ' || cur == '\n'))
             move()
     }
 
@@ -96,7 +81,9 @@ class ParseHelper(
         throw ParsingException("Cant move", pos)
     }
 
-    fun parse(vararg texts: String): String {
+    fun parseStr(vararg texts: String) = parseStr(texts.asList())
+
+    fun parseStr(texts: List<String>): String {
         for (t in texts)
             if (canMove(t.length) && nextNSymbols(t.length) == t) {
                 move(t.length)
@@ -105,7 +92,9 @@ class ParseHelper(
         throw ParsingException("Cant find ${if (texts.size != 1) "any of " else ""}[${texts.joinToString(",")}]", pos)
     }
 
-    fun parse(vararg chars: Char): Char {
+    fun parse(vararg chars: Char): Char = parse(chars.asList())
+
+    fun parse(chars: List<Char>): Char {
         for (c in chars)
             if (canMove() && cur == c) {
                 move()
@@ -114,7 +103,9 @@ class ParseHelper(
         throw ParsingException("Cant find ${if (chars.size != 1) "any of " else ""}[${chars.joinToString(",")}]", pos)
     }
 
-    fun isParse(vararg texts: String): Boolean {
+    fun isParseStr(vararg texts: String) = isParseStr(texts.asList())
+
+    fun isParseStr(texts: List<String>): Boolean {
         for (t in texts)
             if (canMove(t.length) && nextNSymbols(t.length) == t) {
                 return true
@@ -122,8 +113,10 @@ class ParseHelper(
         return false
     }
 
-    fun isParse(vararg texts: Char): Boolean {
-        for (t in texts)
+    fun isParse(vararg chars: Char) = isParse(chars.asList())
+
+    fun isParse(chars: List<Char>): Boolean {
+        for (t in chars)
             if (cur == t) {
                 return true
             }

@@ -1,27 +1,2 @@
-select *
-from input;
-
-select a, b,   asd
-from input;
-
-select 1;
-
-select "qwer";
-
-select 23, name, "data123"
-from t;
-
-select a, (
-    select f
-    from input
-)
-from input;
-
-select a, (
-    select f
-    from input
-)
-from (
-         select a,d
-         from input
-     ) as innT;
+select f1
+from input, input2 ;

@@ -1,8 +1,6 @@
 package selectSqlAnalyzer.main.tools
 
-import selectSqlAnalyzer.main.ParseResult
-import selectSqlAnalyzer.main.core.IField
-import selectSqlAnalyzer.main.core.ITable
+import selectSqlAnalyzer.main.ast.nodes.*
 
 object CustomLogger {
     const val ZoneDivider = "-- -- -- -- --"
@@ -21,33 +19,24 @@ object CustomLogger {
         log("")
     }
 
-    fun logParseResult(pr: ParseResult) {
-        logParseResultInner(pr)
+    fun logAstTree(san: SelectAstNode) {
+        logAstTreeInner(san)
     }
 
-    private fun logParseResultInner(pr: ParseResult, level: Int = 0) {
+    private fun logAstTreeInner(pr: SelectAstNode, level: Int = 0) {
         LevelLogger(level).apply {
-            if (level != 0)
-                log(" -(select", level - 1)
-            else
-                log("select")
-            pr.fields.forEach {
-                if (it is ParseResult)
-                    logParseResultInner(it, level + 1)
-                else {
-                    log(" - ${it.prettyString()}");
-                }
+            log("select")
+            log("  >fields")
+            for (f in pr.fieldAstNodes) {
+                log("    -${f.toPrettyString()}")
             }
-
-            log("from")
-            if (pr.from is ParseResult) {
-                logParseResultInner(pr.from, level + 1)
-            } else
-                log(" - ${pr.from?.prettyString() ?: "none"}")
-
-            if (level != 0 && pr.tableName() != null)
-                log("  ) as ${pr.tableName()}", level - 1)
-
+            log("  >tables")
+            pr.from?.let {
+                val tanl = TableAstNodeLogger(this)
+                tanl.log(it)
+                return
+            }
+            log("    -null")
         }
     }
 
@@ -61,15 +50,113 @@ object CustomLogger {
         }
     }
 
-    fun IField.prettyString(): String {
-        //return "${this.value()} " + if (!this.isStatic()) " as field" else " as static value"
-        val value = this.value()
-        return if (this.isStatic()) "\'$value\'"
-        else value
+    private class TableAstNodeLogger(
+            val levelLogger: LevelLogger
+    ) {
+        fun log(tableAstNode: TableAstNode) {
+            logInner(tableAstNode)
+        }
+
+        fun logInnerSpaces(innerLevel: Int) {
+            for (i in 0..innerLevel)
+                print("  ")
+        }
+
+        private fun logInner(tableAstNode: TableAstNode, tableAstLevel: Int = 1) {
+            with(levelLogger) {
+
+                when (tableAstNode) {
+                    is NamedTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("table")
+                        logInnerSpaces(tableAstLevel)
+                        log("- ${tableAstNode.tableName}")
+                    }
+                    is RightOuterJoinTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("right outer join")
+
+                        logInner(tableAstNode.t1, tableAstLevel + 1)
+
+                        logInner(tableAstNode.t2, tableAstLevel + 1)
+
+                        logInnerSpaces(tableAstLevel)
+                        log("  on")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f1.toPrettyString()}")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f2.toPrettyString()}")
+                    }
+                    is LeftOuterJoinTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("left outer join")
+
+                        logInner(tableAstNode.t1, tableAstLevel + 1)
+
+                        logInner(tableAstNode.t2, tableAstLevel + 1)
+
+                        logInnerSpaces(tableAstLevel)
+                        log("  on")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f1.toPrettyString()}")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f2.toPrettyString()}")
+                    }
+                    is InnerJoinTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("inner join")
+
+                        logInner(tableAstNode.t1, tableAstLevel + 1)
+
+                        logInner(tableAstNode.t2, tableAstLevel + 1)
+
+                        logInnerSpaces(tableAstLevel)
+                        log("  on")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f1.toPrettyString()}")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f2.toPrettyString()}")
+                    }
+                    is FullOuterJoinTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("full outer join")
+
+                        logInner(tableAstNode.t1, tableAstLevel + 1)
+
+                        logInner(tableAstNode.t2, tableAstLevel + 1)
+
+                        logInnerSpaces(tableAstLevel)
+                        log("  on")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f1.toPrettyString()}")
+                        logInnerSpaces(tableAstLevel)
+                        log("  - ${tableAstNode.f2.toPrettyString()}")
+                    }
+                    is CrossJoinTableAstNode -> {
+                        logInnerSpaces(tableAstLevel)
+                        log("cross join")
+
+                        logInner(tableAstNode.t1, tableAstLevel + 1)
+
+                        logInner(tableAstNode.t2, tableAstLevel + 1)
+                    }
+                }
+            }
+            return
+
+        }
     }
 
-    fun ITable.prettyString(): String {
-        return "${this.tableName()} [${this.fields().joinToString(",")}]"
+    fun FieldAstNode.toPrettyString(): String {
+        when (this) {
+            is LiteralFieldAstNode ->
+                return "literal ${fieldValue}"
+            is IdentFieldAstNode ->
+                return "ident   ${fieldName}"
+            is AllIdentsFieldAstNode ->
+                return "        *"
+        }
+        return "undefined"
     }
 
 }
