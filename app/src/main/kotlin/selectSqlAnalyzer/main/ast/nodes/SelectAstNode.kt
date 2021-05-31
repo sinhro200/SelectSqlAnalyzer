@@ -7,10 +7,10 @@ import kotlin.jvm.Throws
 class SelectAstNode(
         val fieldAstNodes: List<FieldAstNode>,
         val from: TableAstNode?,
-        val where: Any? = null,
-        val groupBy: Any? = null,
-        val having: Any? = null,
-        val orderBy: Any? = null,
+        val where: WhereAstNode? = null,
+        val groupBy: GroupByAstNode? = null,
+        val having: HavingAstNode? = null,
+        val orderBy: OrderByAstNode? = null,
 ) : FieldAstNode() {
     @Throws()
     fun asLiteralFieldAstNode(): LiteralFieldAstNode {

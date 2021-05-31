@@ -31,12 +31,54 @@ object CustomLogger {
                 log("    -${f.toPrettyString()}")
             }
             log("  >tables")
-            pr.from?.let {
+            if (pr.from != null) {
                 val tanl = TableAstNodeLogger(this)
-                tanl.log(it)
-                return
+                tanl.log(pr.from)
+            } else {
+                log("    -null")
             }
-            log("    -null")
+
+            log("  >where")
+            pr.where?.let { whereNode ->
+                LevelLogger(level+1).logWhere(whereNode)
+                /*do {
+                    when (whereNode) {
+                        is SimpleWhereAstNode -> {
+                            log("   -${whereNode.condition.f1.toPrettyString()} " +
+                                    whereNode.condition.conditionOp.string +
+                                    " ${whereNode.condition.f1.toPrettyString()}")
+                        }
+                        is AndWhereAstNode -> {
+
+                        }
+                        is OrWhereAstNode -> {
+
+                        }
+                    }
+                } while (whereNode !is SimpleWhereAstNode)*/
+            }
+        }
+    }
+
+    private fun LevelLogger.logWhere(whereAstNode: WhereAstNode) {
+        whereAstNode.apply {
+            when (this) {
+                is SimpleWhereAstNode -> {
+                    log(" ${condition.conditionOp.string}")
+                    log("   - ${condition.f1.toPrettyString()} ")
+                    log("   - ${condition.f2.toPrettyString()}")
+                }
+                is AndWhereAstNode -> {
+                    logWhere(whereAstNode1)
+                    log(" and")
+                    logWhere(whereAstNode2)
+                }
+                is OrWhereAstNode -> {
+                    logWhere(whereAstNode1)
+                    log(" or")
+                    logWhere(whereAstNode2)
+                }
+            }
         }
     }
 
