@@ -8,11 +8,15 @@ class ParseHelper(
         val startPos: Int = 0
 ) {
     var pos: Int = startPos
+        set(value){
+            field = value
+            cur = text[value]
+        }
     var cur: Char = text[startPos]
 
     fun move(n: Int = 1) {
         pos += n
-        cur = text[pos]
+//        cur = text[pos]
     }
 
     fun canMove(n: Int = 1) = pos + n < text.length
@@ -42,7 +46,10 @@ class ParseHelper(
         return with(StringBuilder()) {
             while (isCorrect(cur)) {
                 append(cur)
-                move()
+                if (canMove())
+                    move()
+                else
+                    return toString()
             }
             return toString()
         }
@@ -85,7 +92,8 @@ class ParseHelper(
 
     fun parseStr(texts: List<String>): String {
         for (t in texts)
-            if (canMove(t.length) && nextNSymbols(t.length) == t) {
+            if (canMove(t.length) && nextNSymbols(t.length) == t && !canMove(t.length+1) ||
+                    (canMove(t.length+1) && nextNSymbols(t.length) == t  && text[pos+t.length].isWhitespace())) {
                 move(t.length)
                 return t
             }

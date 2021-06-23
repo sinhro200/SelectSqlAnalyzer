@@ -7,13 +7,12 @@ class SimpleWhereAstNode(
 ) : WhereAstNode()
 
 class AndWhereAstNode(
-        val whereAstNode1: WhereAstNode,
-        val whereAstNode2: WhereAstNode
+        val nodes: List<WhereAstNode>
 ) : WhereAstNode()
 
+
 class OrWhereAstNode(
-        val whereAstNode1: WhereAstNode,
-        val whereAstNode2: WhereAstNode
+        val nodes: List<WhereAstNode>
 ) : WhereAstNode()
 
 class Condition(

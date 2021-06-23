@@ -1,2 +1,4 @@
-select f1
-from input, input2 ;
+select *
+from input left join input2 on a = b
+where input.a > 2 and (input.a < 5 or c > b)
+;

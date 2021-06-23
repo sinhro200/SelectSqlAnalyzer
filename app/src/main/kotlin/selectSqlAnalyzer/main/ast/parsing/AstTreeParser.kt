@@ -177,17 +177,74 @@ class AstTreeParser(
         return resultTableAstNode
     }
 
+    private fun ParseHelper.parseWhereCondition(): Condition {
+        clearSpaces()
+        var field: FieldAstNode? = null
+        parseFieldLiteralOrIdent(
+                { literalStr ->
+                    field = LiteralFieldAstNode(literalStr)
+                },
+                { identStr ->
+                    field = LiteralFieldAstNode(identStr)
+                }
+        )
+        clearSpaces()
+        val op = parseStr(Condition.ConditionOp.values().map { it.string })
+        clearSpaces()
+        var field2: FieldAstNode? = null
+        parseFieldLiteralOrIdent(
+                { literalStr ->
+                    field2 = LiteralFieldAstNode(literalStr)
+                },
+                { identStr ->
+                    field2 = LiteralFieldAstNode(identStr)
+                }
+        )
+
+        return Condition(
+                field
+                        ?: throw ParsingException("Field 1 in cond cant be null"),
+                Condition.ConditionOp.fromStr(op)
+                        ?: throw ParsingException("Operation in cond cant be null"),
+                field2
+                        ?: throw ParsingException("Field 2 in cond cant be null")
+        )
+    }
+
     private fun parseWhere(): WhereAstNode? {
         if (queryPartsHelper.whereString.isEmpty())
             return null
 
-        var whereAstNode: WhereAstNode? = null
-        with(ParseHelper(queryPartsHelper.whereString.toLowerCase())) {
-            clearSpaces()
-            parseStr("where")
 
+
+        fun ParseHelper.parseWhereInner(): WhereAstNode {
+            val astNodesWithOr = mutableListOf<WhereAstNode>()
+
+            var astNodesWithAnd = mutableListOf<WhereAstNode>()
+
+//            with(ParseHelper(whereString)) {
+//                clearSpaces()
+//                parseStr("where")
+            clearSpaces()
             while (canMove()) {
                 clearSpaces()
+
+
+
+                val astNode = if (isParse('(')) {
+                    move()
+                    val innerAstNodeText = text.substring(this.pos).substringBefore(')')
+                    move(innerAstNodeText.length+1)
+                    clearSpaces()
+                    with(ParseHelper(innerAstNodeText)){
+                        parseWhereInner()
+                    }
+                } else {
+                    val condition = parseWhereCondition()
+                    clearSpaces()
+                    SimpleWhereAstNode(condition)
+                }
+
                 var andOr: String? = null
                 try {
                     andOr = parseStr("and", "or")
@@ -195,70 +252,42 @@ class AstTreeParser(
                 } catch (ignored: java.lang.Exception) {
                 }
 
-                var field: FieldAstNode? = null
-                parseFieldLiteralOrIdent(
-                        { literalStr ->
-                            field = LiteralFieldAstNode(literalStr)
-                        },
-                        { identStr ->
-                            field = LiteralFieldAstNode(identStr)
-                        }
-                )
-                clearSpaces()
-                val op = parseStr(Condition.ConditionOp.values().map { it.string })
-                clearSpaces()
-                var field2: FieldAstNode? = null
-                parseFieldLiteralOrIdent(
-                        { literalStr ->
-                            field2 = LiteralFieldAstNode(literalStr)
-                        },
-                        { identStr ->
-                            field2 = LiteralFieldAstNode(identStr)
-                        }
-                )
                 when (andOr) {
                     "and" -> {
-                        whereAstNode = AndWhereAstNode(whereAstNode
-                                ?: throw ParsingException("Cant find first condition"),
-                                SimpleWhereAstNode(Condition(
-                                        field
-                                                ?: throw ParsingException("Field 1 in cond cant be null"),
-                                        Condition.ConditionOp.fromStr(op)
-                                                ?: throw ParsingException("Operation in cond cant be null"),
-                                        field2
-                                                ?: throw ParsingException("Field 2 in cond cant be null")
-                                )))
+                        astNodesWithAnd.add(astNode)
                     }
                     "or" -> {
-                        whereAstNode = OrWhereAstNode(whereAstNode
-                                ?: throw ParsingException("Cant find first condition"),
-                                SimpleWhereAstNode(Condition(
-                                        field
-                                                ?: throw ParsingException("Field 1 in cond cant be null"),
-                                        Condition.ConditionOp.fromStr(op)
-                                                ?: throw ParsingException("Operation in cond cant be null"),
-                                        field2
-                                                ?: throw ParsingException("Field 2 in cond cant be null")
-                                )))
+                        if (astNodesWithAnd.isNotEmpty()) {
+                            astNodesWithAnd.add(astNode)
+                            astNodesWithOr.add(AndWhereAstNode(astNodesWithAnd.toList()))
+                        } else {
+                            astNodesWithOr.add(astNode)
+                        }
+                        astNodesWithAnd.clear()
                     }
                     else -> {
-                        whereAstNode = SimpleWhereAstNode(
-                                Condition(
-                                        field
-                                                ?: throw ParsingException("Field 1 in cond cant be null"),
-                                        Condition.ConditionOp.fromStr(op)
-                                                ?: throw ParsingException("Operation in cond cant be null"),
-                                        field2
-                                                ?: throw ParsingException("Field 2 in cond cant be null")
-                                )
-                        )
+                        if (astNodesWithAnd.isNotEmpty()) {
+                            astNodesWithAnd.add(astNode)
+                            astNodesWithOr.add(AndWhereAstNode(astNodesWithAnd.toList()))
+                        } else {
+                            astNodesWithOr.add(astNode)
+                        }
                     }
                 }
                 clearSpaces()
+
             }
+            return if (astNodesWithOr.size == 1) astNodesWithOr[0] else OrWhereAstNode(astNodesWithOr.toList())
         }
 
-        return whereAstNode
+        val str = queryPartsHelper.whereString.toLowerCase()
+        with(ParseHelper(str)) {
+            clearSpaces()
+            parseStr("where")
+            return parseWhereInner()
+        }
+
+//        return parseWhereInner(queryPartsHelper.whereString.toLowerCase())
     }
 
     private fun parseGroup(): GroupByAstNode? {

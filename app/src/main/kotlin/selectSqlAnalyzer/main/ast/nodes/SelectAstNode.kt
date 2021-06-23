@@ -11,7 +11,7 @@ class SelectAstNode(
         val groupBy: GroupByAstNode? = null,
         val having: HavingAstNode? = null,
         val orderBy: OrderByAstNode? = null,
-) : FieldAstNode() {
+) : FieldAstNode(){
     @Throws()
     fun asLiteralFieldAstNode(): LiteralFieldAstNode {
         if (fieldAstNodes.isEmpty())
@@ -26,10 +26,10 @@ class SelectAstNode(
     }
 
     fun asTableAstNode(tableName: String): TableAstNode {
-        return NamedTableAstNode(tableName)
+        return NamedTableAstNode(tableName,this)
     }
 
     fun execute(context: Context) {
-
+        //asLiteralFieldAstNode()
     }
 }

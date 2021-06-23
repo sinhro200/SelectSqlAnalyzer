@@ -1,10 +1,13 @@
 package selectSqlAnalyzer.main.ast.nodes
 
-sealed class TableAstNode
+open class TableAstNode
 
 class NamedTableAstNode(
-        val tableName: String
-) : TableAstNode()
+        val tableName: String,
+        val asSelect: SelectAstNode? = null
+) : TableAstNode(){
+    val isSelect = asSelect!=null
+}
 
 sealed class JoinTableAstNode(
         val t1: TableAstNode,
