@@ -24,3 +24,4 @@ public fun findWordPositionSkippingBrackets(
         return index
     return index
 }
+

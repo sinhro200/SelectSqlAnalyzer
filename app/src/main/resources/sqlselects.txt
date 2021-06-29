@@ -24,7 +24,7 @@ select a, (
 from (
          select a,d
          from input
-     ) as innT;
+     ) innT;
 
 select a
 from (
@@ -72,6 +72,6 @@ select a, (
 from (
          select a,d
          from input
-     ) as innT
+     ) innT
      left join t2 on innT.a = t2.b
 where input.a > 2 and (input.a < 5 or c > b) and input.r < input.s;

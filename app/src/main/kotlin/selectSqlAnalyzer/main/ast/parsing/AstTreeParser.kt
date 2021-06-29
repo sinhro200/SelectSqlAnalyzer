@@ -5,6 +5,7 @@ import selectSqlAnalyzer.main.parsing.ParseHelper
 import selectSqlAnalyzer.main.parsing.ParsingException
 import selectSqlAnalyzer.main.parsing.QueryPartsHelper
 import selectSqlAnalyzer.main.parsing.findWordPositionSkippingBrackets
+import java.lang.RuntimeException
 
 class AstTreeParser(
         query: String,
@@ -54,7 +55,7 @@ class AstTreeParser(
                     res.add(AllIdentsFieldAstNode())
                 } else {
                     val fieldString = parseFieldString()
-                    if (fieldString.toIntOrNull() != null)
+                    if (fieldString.toFloatOrNull() != null)
                         res.add(LiteralFieldAstNode(fieldString))
                     else
                         res.add(IdentFieldAstNode(fieldString))
@@ -151,11 +152,11 @@ class AstTreeParser(
                     pos = closeBracketPos
                     move()
                     clearSpaces()
-                    try {
-                        parseStr("as")
-                    } catch (e: Exception) {
-                        throw ParsingException("Таблица должна иметь алиас")
-                    }
+//                    try {
+//                        parseStr("as")
+//                    } catch (e: Exception) {
+//                        throw ParsingException("Таблица должна иметь алиас")
+//                    }
 
                     clearSpaces()
                     val asTableName = parseTableName()
@@ -185,7 +186,7 @@ class AstTreeParser(
                     field = LiteralFieldAstNode(literalStr)
                 },
                 { identStr ->
-                    field = LiteralFieldAstNode(identStr)
+                    field = IdentFieldAstNode(identStr)
                 }
         )
         clearSpaces()
@@ -197,7 +198,7 @@ class AstTreeParser(
                     field2 = LiteralFieldAstNode(literalStr)
                 },
                 { identStr ->
-                    field2 = LiteralFieldAstNode(identStr)
+                    field2 = IdentFieldAstNode(identStr)
                 }
         )
 
@@ -230,13 +231,12 @@ class AstTreeParser(
                 clearSpaces()
 
 
-
                 val astNode = if (isParse('(')) {
                     move()
                     val innerAstNodeText = text.substring(this.pos).substringBefore(')')
-                    move(innerAstNodeText.length+1)
+                    move(innerAstNodeText.length + 1)
                     clearSpaces()
-                    with(ParseHelper(innerAstNodeText)){
+                    with(ParseHelper(innerAstNodeText)) {
                         parseWhereInner()
                     }
                 } else {
@@ -307,7 +307,7 @@ class AstTreeParser(
         if (queryPartsHelper.havingString.isEmpty())
             return null
         //todo
-        val ph = ParseHelper(queryPartsHelper.groupByString.toLowerCase())
+        val ph = ParseHelper(queryPartsHelper.havingString.toLowerCase())
         ph.clearSpaces()
         ph.parseStr("having")
         while (ph.canMove()) {
@@ -319,13 +319,37 @@ class AstTreeParser(
     private fun parseOrderByAstNode(): OrderByAstNode? {
         if (queryPartsHelper.orderByString.isEmpty())
             return null
-        //todo
-        val ph = ParseHelper(queryPartsHelper.groupByString.toLowerCase())
-        ph.clearSpaces()
-        ph.parseStr("order by")
-        while (ph.canMove()) {
+        val res = mutableListOf<Pair<FieldAstNode, OrderByAstNode.OrderByParam>>()
+        with(ParseHelper(queryPartsHelper.orderByString.toLowerCase())) {
+            clearSpaces()
+            parseStr("order by")
+            while (canMove()) {
+                val fieldString = parseFieldString()
+                val field = IdentFieldAstNode(fieldString)
+                var ordering: OrderByAstNode.OrderByParam = OrderByAstNode.OrderByParam.DESC
 
+                clearSpaces()
+
+                if (isParseStr("asc", "desc")) {
+                    if (isParseStr("asc")) {
+                        move(3)
+                        ordering = OrderByAstNode.OrderByParam.ASC
+                    } else {
+                        move(4)
+                        ordering = OrderByAstNode.OrderByParam.DESC
+                    }
+                }
+
+                res.add(Pair(field, ordering))
+
+                clearSpaces()
+
+                if (isParse(','))
+                    move()
+                else if (canMove())
+                    throw RuntimeException("Error while parsing order by region")
+            }
         }
-        return null
+        return OrderByAstNode(res)
     }
 }

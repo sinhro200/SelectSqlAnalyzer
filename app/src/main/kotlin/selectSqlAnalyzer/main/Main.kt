@@ -4,8 +4,9 @@ import selectSqlAnalyzer.main.ast.parsing.AstTreeParser
 import selectSqlAnalyzer.main.core.Context
 import selectSqlAnalyzer.main.core.Table
 import selectSqlAnalyzer.main.parsing.ParsingException
+import selectSqlAnalyzer.main.parsing.TableSourceParser
 import selectSqlAnalyzer.main.tools.CustomLogger
-import selectSqlAnalyzer.main.tools.FileParser
+import selectSqlAnalyzer.main.tools.QueriesParser
 import java.io.PrintStream
 
 
@@ -13,18 +14,20 @@ import java.io.PrintStream
 
 class Main {
     companion object {
-        val selectFile = "sqlselects.txt"
+        val selectFile = "sqlselect.txt"
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val queries = with(FileParser(selectFile)) {
+            val queries = with(QueriesParser(selectFile)) {
                 parse()
                 return@with this.queries
             }
 
-            val context = Context().also {
-                it.addTable(Table(emptyList()), "input")
-                it.addTable(Table(emptyList()), "t")
+            val context = Context().also {ctx->
+                val tables = TableSourceParser.parseFromFile("tables.txt")
+                tables.forEach{
+                    ctx.addTable(it)
+                }
             }
 
             for (q in queries) {
@@ -33,6 +36,8 @@ class Main {
                     val parseResult = AstTreeParser(q).parse()
 
                     CustomLogger.logAstTree(parseResult)
+
+                    context.copyOnlyTables().execute(parseResult)
                 } catch (pe: ParsingException) {
                     val encoding = System.getProperty("console.encoding", "UTF-8")
                     val ps = PrintStream(System.out, false, encoding)

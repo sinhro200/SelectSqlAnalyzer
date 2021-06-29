@@ -5,7 +5,7 @@ import java.io.FileReader
 import java.lang.StringBuilder
 import kotlin.jvm.Throws
 
-class FileParser(
+class QueriesParser(
         val filename: String
 ) {
     var queries: MutableList<String> = mutableListOf()

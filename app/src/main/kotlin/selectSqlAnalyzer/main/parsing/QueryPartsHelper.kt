@@ -18,7 +18,23 @@ class QueryPartsHelper(
     var orderByString = ""
 
     fun parseParts() {
+        var prevPos = selectPosition
+        fromPosition = findWordPositionSkippingBrackets(query, "from", prevPos)
+        if (fromPosition>0)
+            prevPos = fromPosition
+        wherePosition = findWordPositionSkippingBrackets(query, "where", prevPos)
+        if (wherePosition>0)
+            prevPos = wherePosition
+        groupByPosition = findWordPositionSkippingBrackets(query, "group by", prevPos)
+        if (groupByPosition>0)
+            prevPos = groupByPosition
+        havingPosition = findWordPositionSkippingBrackets(query, "having", prevPos)
+        if (havingPosition>0)
+            prevPos = havingPosition
+        orderByPosition = findWordPositionSkippingBrackets(query, "order by", prevPos)
+
         selectString = selectString()
+
 
         fromString =
                 if (fromPosition != -1)
@@ -43,7 +59,6 @@ class QueryPartsHelper(
     }
 
     private fun selectString(): String {
-        fromPosition = findWordPositionSkippingBrackets(query, "from", selectPosition)
         return if (fromPosition == -1)
             query
         else
@@ -51,7 +66,6 @@ class QueryPartsHelper(
     }
 
     private fun fromString(): String {
-        wherePosition = findWordPositionSkippingBrackets(query, "where", fromPosition)
         return if (wherePosition == -1)
             query.substring(fromPosition)
         else
@@ -59,15 +73,21 @@ class QueryPartsHelper(
     }
 
     private fun whereString(): String {
-        groupByPosition = findWordPositionSkippingBrackets(query, "group by", wherePosition)
         return if (groupByPosition == -1)
-            query.substring(wherePosition)
+            if (havingPosition == -1) {
+                if (orderByPosition == -1) {
+                    query.substring(wherePosition)
+                } else {
+                    query.substring(wherePosition, orderByPosition)
+                }
+            } else {
+                query.substring(wherePosition, havingPosition)
+            }
         else
             query.substring(wherePosition, groupByPosition)
     }
 
     private fun groupByString(): String {
-        havingPosition = findWordPositionSkippingBrackets(query, "having", groupByPosition)
         return if (havingPosition == -1)
             query.substring(groupByPosition)
         else
@@ -75,7 +95,6 @@ class QueryPartsHelper(
     }
 
     private fun havingString(): String {
-        orderByPosition = findWordPositionSkippingBrackets(query, "order by", havingPosition)
         return if (orderByPosition == -1)
             query.substring(havingPosition)
         else
@@ -83,6 +102,6 @@ class QueryPartsHelper(
     }
 
     private fun orderByString(): String {
-        return query.substring(orderByPosition, query.length)
+        return query.substring(orderByPosition)
     }
 }

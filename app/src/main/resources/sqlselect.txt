@@ -1,4 +1,11 @@
 select *
-from input left join input2 on a = b
-where input.a > 2 and (input.a < 5 or c > b)
+from table1
+where id > 0
+order by id desc, age asc
+;
+
+select *
+from table2
+where id > 0
+order by cnt desc, price desc
 ;

@@ -1,0 +1,24 @@
+
+table1
+
+int int str
+id age name
+
+1 23 Petya
+2 47 Maksim
+3 35 Vasya
+4 20 Denis
+5 39 Kolya
+---
+
+table2
+
+int int float str
+id cnt price title
+
+1 13 123.231 n6t3
+2 13 12.21 n6t3
+3 11 94.23 n6t3
+4 3 46.0 n6t3
+5 19 3.333 n6t3
+---

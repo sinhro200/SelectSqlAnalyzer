@@ -61,6 +61,11 @@ object CustomLogger {
                     }
                 } while (whereNode !is SimpleWhereAstNode)*/
             }
+
+            pr.orderBy?.let {
+                log("  >order by")
+                logOrderByNode(it, level + 1)
+            }
         }
     }
 
@@ -109,6 +114,15 @@ object CustomLogger {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun logOrderByNode(orderByAstNode: OrderByAstNode, level: Int) {
+        LevelLogger(level).apply {
+            for (f in orderByAstNode.fields) {
+                logFieldAstNode(f.first,level)
+                log("${f.second}",level+1)
             }
         }
     }
@@ -229,7 +243,7 @@ object CustomLogger {
 
                         logInner(tableAstNode.t2, tableAstLevel + 1)
                     }
-                    else ->{
+                    else -> {
                         //pass
                     }
                 }

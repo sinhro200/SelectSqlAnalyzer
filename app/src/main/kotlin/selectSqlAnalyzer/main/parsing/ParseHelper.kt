@@ -40,6 +40,7 @@ class ParseHelper(
     }
 
     fun parseFieldString(): String {
+        clearSpaces()
         fun isCorrect(c: Char): Boolean {
             return c.isDigit() || c.isLetter() || listOf('.').contains(c)
         }
