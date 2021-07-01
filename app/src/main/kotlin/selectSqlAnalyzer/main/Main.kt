@@ -14,11 +14,45 @@ import java.io.PrintStream
 
 class Main {
     companion object {
-        val selectFile = "sqlselect.txt"
+        val selectOnlyAstFile = "sqlselects.txt"
+        val selectWithExecutionFile = "sqlselects2.txt"
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val queries = with(QueriesParser(selectFile)) {
+            runOnlyAst()
+            runWithExecution()
+        }
+
+        fun runOnlyAst(){
+            val queries = with(QueriesParser(selectOnlyAstFile)) {
+                parse()
+                return@with this.queries
+            }
+
+            for (q in queries) {
+                CustomLogger.logQuery(q)
+                try {
+                    val parseResult = AstTreeParser(q).parse()
+
+                    CustomLogger.logAstTree(parseResult)
+                } catch (pe: ParsingException) {
+                    val encoding = System.getProperty("console.encoding", "UTF-8")
+                    val ps = PrintStream(System.out, false, encoding)
+                    ps.println("Ошибка. " + pe.message)
+//                    println("Ошибка. " + pe.message)
+                    println(pe.stackTrace.joinToString("\n   "))
+                }
+                CustomLogger.bigDivider()
+            }
+        }
+
+        fun runWithExecution(){
+            println("___________________________________________________________________")
+            println("                    - - - - - - - - - - - -")
+            println("                    Running with execution")
+            println("                    - - - - - - - - - - - -")
+            println("___________________________________________________________________")
+            val queries = with(QueriesParser(selectWithExecutionFile)) {
                 parse()
                 return@with this.queries
             }

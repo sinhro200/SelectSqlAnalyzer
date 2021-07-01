@@ -4,8 +4,8 @@ where id > 0
 order by id desc, age asc
 ;
 
-select *
+select id, cnt
 from table2
-where id > 0
+where id > 0 and title = "n6t3"
 order by cnt desc, price desc
 ;

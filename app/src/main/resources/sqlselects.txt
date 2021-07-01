@@ -74,4 +74,5 @@ from (
          from input
      ) innT
      left join t2 on innT.a = t2.b
-where input.a > 2 and (input.a < 5 or c > b) and input.r < input.s;
+where input.a > 2 and (input.a < 5 or c > b) and input.r < input.s
+order by a;

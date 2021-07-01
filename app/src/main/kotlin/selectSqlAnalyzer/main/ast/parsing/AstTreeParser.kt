@@ -81,6 +81,8 @@ class AstTreeParser(
             val fieldString = parseFieldString()
             if (fieldString.toIntOrNull() != null)
                 callbackOnLiteral.invoke(fieldString)
+            else if (fieldString.toFloatOrNull() != null)
+                callbackOnLiteral.invoke(fieldString)
             else
                 callbackOnIdent.invoke(fieldString)
         }
@@ -326,7 +328,7 @@ class AstTreeParser(
             while (canMove()) {
                 val fieldString = parseFieldString()
                 val field = IdentFieldAstNode(fieldString)
-                var ordering: OrderByAstNode.OrderByParam = OrderByAstNode.OrderByParam.DESC
+                var ordering: OrderByAstNode.OrderByParam = OrderByAstNode.OrderByParam.ASC
 
                 clearSpaces()
 

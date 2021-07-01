@@ -15,7 +15,7 @@ class Context(
 
     fun copyOnlyTables(): Context {
         val n = Context(parentContext)
-        for(t in tables)
+        for (t in tables)
             n.addTable(t.value)
         return n
     }
@@ -49,6 +49,8 @@ class Context(
     }
 
     fun execute(parseResult: SelectAstNode) {
+        resultData.clear()
+        resultFields.clear()
         val tname = processTableName(parseResult)
         val table = tables[tname]
                 ?: throw RuntimeException("Cant find table $tname in context")
@@ -84,11 +86,15 @@ class Context(
             }
         }
         resultData.forEach { row ->
-            for (i in row.indices) {
-                if (i in indices) {
-                    val (value, type) = row[i]
-                    sb.append(String.format("%10s", value))
-                }
+//            for (i in row.indices) {
+//                if (i in indices) {
+//                    val (value, type) = row[i]
+//                    sb.append(String.format("%10s", value))
+//                }
+//            }
+            row.forEach {
+                val (value, type) = it
+                sb.append(String.format("%10s", value))
             }
             sb.append('\n')
         }
@@ -325,10 +331,34 @@ class Context(
     }
 
     fun processFields(parseResult: SelectAstNode, table: ITable) {
+
         resultFields.clear()
+        resultFields.addAll(table.fields())
         if (parseResult.fieldAstNodes.size == 1 && parseResult.fieldAstNodes[0] is AllIdentsFieldAstNode) {
-            resultFields.addAll(table.fields())
+
         } else {
+            val resData = LinkedList<List<Pair<String, FieldType>>>()
+            for (row in resultData) {
+                val newRow = mutableListOf<Pair<String, FieldType>>()
+                for (fieldNode in parseResult.fieldAstNodes) {
+                    when (fieldNode) {
+                        is IdentFieldAstNode -> {
+                            newRow.add(valueOfFieldInRow(fieldNode.fieldName, row))
+                        }
+                        is LiteralFieldAstNode -> {
+                            newRow.add(Pair(fieldNode.fieldValue, UndefFT))
+                        }
+                        is AllIdentsFieldAstNode -> {
+                            throw RuntimeException("Cant select ALL fields with specific field")
+                        }
+                    }
+                }
+                resData.add(newRow)
+            }
+            resultData.clear()
+            resultData.addAll(resData)
+
+            resultFields.clear()
             for (fieldNode in parseResult.fieldAstNodes) {
                 when (fieldNode) {
                     is IdentFieldAstNode -> {

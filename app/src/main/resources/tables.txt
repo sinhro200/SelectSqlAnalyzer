@@ -17,8 +17,35 @@ int int float str
 id cnt price title
 
 1 13 123.231 n6t3
-2 13 12.21 n6t3
+2 13 12.21 n6t4
 3 11 94.23 n6t3
-4 3 46.0 n6t3
+4 3 46.0 n6t5
 5 19 3.333 n6t3
+---
+
+
+input
+
+int str str
+a b asd
+
+23 ff ttghh
+21 uy hfisdjk
+22 or wubcc
+22 dsb euegw
+22 rv pofkvd
+23 hrs qhwgn
+---
+
+t
+
+str
+name
+
+ttghh
+hfisdjk
+wubcc
+euegw
+pofkvd
+qhwgn
 ---
